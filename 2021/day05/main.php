@@ -39,32 +39,30 @@ function draw_lines(&$grid, $offset, $lines, $allow_diagonals) {
 		$start = $line->start;
 		$end = $line->end;
 
-		if ($start->y == $end->y) {
-			$min = min($start->x, $end->x);
-			$max = max($start->x, $end->x);
-			for ($i = $min - $offset->x; $i <= $max - $offset->x; $i++) {
-				$grid[$start->y - $offset->y][$i] += 1;
-			}
-		} elseif ($start->x == $end->x) {
-			$min = min($start->y, $end->y);
-			$max = max($start->y, $end->y);
-			for ($i = $min - $offset->y; $i <= $max - $offset->y; $i++) {
-				$grid[$i][$start->x - $offset->x] += 1;
-			}
-		} elseif ($allow_diagonals) {
-			$y_step = $line->start->y > $line->end->y ? -1 : 1;
-			$x_step = $line->start->x > $line->end->x ? -1 : 1;
+		$y_step = 0;
+		if ($start->y < $end->y) {
+			$y_step = 1;
+		} elseif ($start->y > $end->y) {
+			$y_step = -1;
+		}
 
-			// End coordinate is inclusive
-			$end->x += $x_step;
-			$end->y += $y_step;
+		$x_step = 0;
+		if ($start->x < $end->x) {
+			$x_step = 1;
+		} elseif ($start->x > $end->x) {
+			$x_step = -1;
+		}
 
-			$current = clone_deep($start);
-			while ($current->x != $end->x && $current->y != $end->y) {
-				$grid[$current->y - $offset->y][$current->x - $offset->x] += 1;
-				$current->x += $x_step;
-				$current->y += $y_step;
-			}
+		if (!(abs($y_step) ^ abs($x_step)) && !$allow_diagonals) {
+			continue;
+		}
+
+		$inclusive_end = new Point($end->x + $x_step, $end->y + $y_step);
+		$current = clone_deep($start);
+		while ($current->x != $inclusive_end->x || $current->y != $inclusive_end->y) {
+			$grid[$current->y - $offset->y][$current->x - $offset->x] += 1;
+			$current->x += $x_step;
+			$current->y += $y_step;
 		}
 	}
 }
