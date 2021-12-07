@@ -48,7 +48,16 @@ size_t part2(vector<int> input) {
 	for (int i = min; i <= max; i++) {
 		size_t sum = 0;
 		for (int other : input) {
-			sum += increasing_sum(abs(i - other));
+
+			// Use arithmetic progression[1] to compute the sum of the range [1; N]
+			// where N is the positive difference between `i` and `other`.
+			// This makes the code O(N^2), removing the performance degradation of
+			// iterating from 1 to N.
+			//
+			// [1]: https://en.wikipedia.org/wiki/Arithmetic_progression
+			// Source: https://www.twitch.tv/videos/1226768633?t=00h37m06s
+			int diff = abs(i - other);
+			sum += (diff * (1 + diff))/2;
 		}
 		fuels[i-min] = sum;
 	}
