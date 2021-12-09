@@ -16,7 +16,7 @@ const DIGITS: &[&[u8]] = &[
 	&[1, 1, 1, 1, 0, 1, 1]	// 9
 ];
 
-const UNIQUE: &[usize] = &[1usize, 4usize, 7usize, 8usize];
+const UNIQUE: &[usize] = &[1, 4, 7, 8];
 
 const SEGMENTS_FREQ: &[usize] = &[8, 6, 8, 7, 4, 9, 7];
 
