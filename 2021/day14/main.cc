@@ -35,6 +35,66 @@ size_t part1(list<char> polymer, map<pair<char, char>, char> &mappings) {
 	return most_common - least_common;
 }
 
+size_t part2(list<char> polymer, map<pair<char, char>, char> &mappings) {
+	map<char, size_t> frequency;
+
+	char previous = *polymer.begin();
+	frequency[previous] = 1;	// left of pairs are not counted
+
+	map<pair<char, char>, size_t> pairs;
+	for (auto it = ++polymer.begin(); it != polymer.end(); it++) {
+		auto pair = make_pair(previous, *it);
+		if (pairs.count(pair) == 0) {
+			pairs[pair] = 0;
+		}
+
+		pairs[pair]++;
+		previous = *it;
+	}
+
+	for (size_t s = 0; s < 40; s++) {
+		auto pairs_previous = pairs;
+		for (auto pair : pairs_previous) {
+			if (pair.second == 0) {
+				continue;
+			}
+
+			pairs[pair.first] -= pair.second;
+
+			auto left = make_pair(pair.first.first, mappings[pair.first]);
+			auto right = make_pair(mappings[pair.first], pair.first.second);
+			if (pairs.count(left) == 0) {
+				pairs[left] = 0;
+			}
+			if (pairs.count(right) == 0) {
+				pairs[right] = 0;
+			}
+
+			pairs[left] += pair.second;
+			pairs[right] += pair.second;
+		}
+	}
+
+	for (auto pair : pairs) {
+		if (frequency.count(pair.first.second) == 0) {
+			frequency[pair.first.second] = 0;
+		}
+
+		frequency[pair.first.second] += pair.second;
+	}
+
+	size_t most_common = 0, least_common = frequency.begin()->second;
+	for (auto pair : frequency) {
+		if (pair.second > most_common) {
+			most_common = pair.second;
+		} else if (pair.second < least_common) {
+			least_common = pair.second;
+		}
+	}
+
+	return most_common - least_common;
+}
+
 int main(void) {
 	fstream file("input.txt");
 
@@ -55,4 +115,5 @@ int main(void) {
 	}
 
 	cout << part1(polymer, mappings) << endl;
+	cout << part2(polymer, mappings) << endl;
 }
