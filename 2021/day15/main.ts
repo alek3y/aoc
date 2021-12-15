@@ -6,7 +6,7 @@ Run with `deno run --allow-read main.ts`
 
 const contents = await Deno.readTextFile("input.txt");
 const lines = contents.split("\n");
-lines.pop(); lines.pop();	// Wtf?? why do I need 2?
+lines.pop();
 
 let risks = lines.map((line) => line.split("").map(Number));
 
@@ -34,6 +34,7 @@ function part1(risks: number[][]): number {
 	let origin = graph[0][0];
 	origin.distance = 0;
 
+	let finite: Set<Node> = new Set();
 	let queue: Node[] = [origin];
 	while (true) {
 		let node = queue.shift();
@@ -45,6 +46,7 @@ function part1(risks: number[][]): number {
 			continue;
 		}
 		node.visited = true;
+		finite.delete(node);
 
 		let adjacent = [
 			graph[node.y-1]?.[node.x],
@@ -54,13 +56,27 @@ function part1(risks: number[][]): number {
 		].filter((node) => node !== undefined);
 
 		for (let i = 0; i < adjacent.length; i++) {
+			if (adjacent[i].visited) {
+				continue;
+			}
+
 			let distance = node.distance + risks[adjacent[i].y][adjacent[i].x];
 			if (distance < adjacent[i].distance) {
 				adjacent[i].distance = distance;
+				finite.add(adjacent[i]);
 			}
-
-			queue.push(adjacent[i]);
 		}
+
+		let shortest = Infinity;
+		let shortest_node: Node;
+		for (let item of finite) {
+			if (item.distance < shortest && !item.visited) {
+				shortest = item.distance;
+				shortest_node = item;
+			}
+		}
+
+		queue.push(shortest_node!);
 	}
 
 	let last_row = graph[graph.length-1];
