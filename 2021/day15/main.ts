@@ -6,7 +6,7 @@ Run with `deno run --allow-read main.ts`
 
 const contents = await Deno.readTextFile("input.txt");
 const lines = contents.split("\n");
-lines.pop();
+lines.pop(); lines.pop();	// Wtf?? why do I need 2?
 
 let risks = lines.map((line) => line.split("").map(Number));
 
@@ -67,4 +67,24 @@ function part1(risks: number[][]): number {
 	return last_row[last_row.length-1].distance;
 }
 
+function part2(risks: number[][]): number {
+	let entire_cave: number[][] = [];
+
+	for (let i = 0; i < 5; i++) {
+		for (let y = 0; y < risks.length; y++) {
+			entire_cave.push([]);
+			for (let j = 0; j < 5; j++) {
+				for (let x = 0; x < risks[y].length; x++) {
+					let new_risk = (risks[y][x] + i+j - 1) % 9 + 1;
+
+					entire_cave[entire_cave.length-1].push(new_risk);
+				}
+			}
+		}
+	}
+
+	return part1(entire_cave);
+}
+
 console.log(part1(risks));
+console.log(part2(risks));
