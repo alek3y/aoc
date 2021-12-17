@@ -72,6 +72,67 @@ struct Packet {
 
 		return parsed;
 	}
+
+	size_t value() {
+		switch (this->type) {
+			case 4:
+				return pack(0, this->data.size(), this->data);
+			case 0:
+				{
+					size_t sum = 0;
+					for (Packet &sub : this->sub) {
+						sum += sub.value();
+					}
+					return sum;
+				}
+			case 1:
+				{
+					size_t mul = 1;
+					for (Packet &sub : this->sub) {
+						size_t val = sub.value();
+						mul *= val;
+					}
+					return mul;
+				}
+			case 2:
+				{
+					size_t min = this->sub[0].value();
+					for (size_t i = 1; i < this->sub.size(); i++) {
+						size_t value = this->sub[i].value();
+						if (value < min) {
+							min = value;
+						}
+					}
+					return min;
+				}
+			case 3:
+				{
+					size_t max = 0;
+					for (Packet &sub : this->sub) {
+						size_t value = sub.value();
+						if (value > max) {
+							max = value;
+						}
+					}
+
+					return max;
+				}
+			case 5:
+				{
+					return this->sub[0].value() > this->sub[1].value();
+				}
+			case 6:
+				{
+					return this->sub[0].value() < this->sub[1].value();
+				}
+			case 7:
+				{
+					return this->sub[0].value() == this->sub[1].value();
+				}
+		}
+
+		return 0;
+	}
 };
 
 size_t sum_versions(Packet &packet) {
@@ -85,6 +146,11 @@ size_t sum_versions(Packet &packet) {
 size_t part1(vector<uint8_t> &sequence) {
 	Packet parsed = Packet::parse(0, sequence.size(), sequence);
 	return sum_versions(parsed);
+}
+
+size_t part2(vector<uint8_t> &sequence) {
+	Packet parsed = Packet::parse(0, sequence.size(), sequence);
+	return parsed.value();
 }
 
 int main(void) {
@@ -108,4 +174,5 @@ int main(void) {
 	}
 
 	cout << part1(sequence) << endl;
+	cout << part2(sequence) << endl;
 }
