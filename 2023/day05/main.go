@@ -5,34 +5,25 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
-	"sync"
 )
 
 type Rule struct {
 	to, from, size int
 }
 
-type Category struct {
-	kind string
-	rules []Rule
-}
-
-func translate(seed int, maps map[string]Category) int {
-	kind := "seed"
-	for kind != "location" {
-		category := maps[kind]
-		for _, rule := range category.rules {
+func translate(seed int, maps [][]Rule) int {
+	for _, rules := range maps {
+		for _, rule := range rules {
 			if seed >= rule.from && seed < rule.from+rule.size {
 				seed = (seed - rule.from) + rule.to
 				break
 			}
 		}
-		kind = category.kind
 	}
 	return seed
 }
 
-func part1(seeds []int, maps map[string]Category) int {
+func part1(seeds []int, maps [][]Rule) int {
 	lowest := seeds[0]
 	for _, seed := range seeds {
 		lowest = min(lowest, translate(seed, maps))
@@ -40,27 +31,28 @@ func part1(seeds []int, maps map[string]Category) int {
 	return lowest
 }
 
-// TODO: Oh no, laziness ensued! Either do it top-down with ranges or bottom-up
-func part2(seeds []int, maps map[string]Category) int {
-	lowest := seeds[0]
-	var lock sync.Mutex
-	var wait sync.WaitGroup
-	for i := 0; i < len(seeds); i += 2 {
-		wait.Add(1)
-		go func(i int) {
-			local := lowest
-			for s := seeds[i]; s < seeds[i]+seeds[i+1]; s++ {
-				local = min(local, translate(s, maps))
-			}
-
-			lock.Lock()
-			lowest = min(lowest, local)
-			lock.Unlock()
-			wait.Done()
-		}(i)
+func invert(maps [][]Rule) [][]Rule {
+	var inverted [][]Rule
+	for i := range maps {
+		var category []Rule
+		for _, rule := range maps[len(maps)-1-i] {
+			category = append(category, Rule{to: rule.from, from: rule.to, size: rule.size})
+		}
+		inverted = append(inverted, category)
 	}
-	wait.Wait()
-	return lowest
+	return inverted
+}
+
+func part2(seeds []int, maps [][]Rule) int {
+	inverted := invert(maps)
+	for l := 0; ; l++ {
+		seed := translate(l, inverted)
+		for i := 0; i < len(seeds); i += 2 {
+			if seed >= seeds[i] && seed <= seeds[i]+seeds[i+1] {
+				return l
+			}
+		}
+	}
 }
 
 func main() {
@@ -74,14 +66,10 @@ func main() {
 		seeds = append(seeds, n)
 	}
 
-	var kind string
-	maps := make(map[string]Category)
+	var maps [][]Rule
 	for _, line := range lines[1:] {
 		if strings.Contains(line, "map:") {
-			header, _, _ := strings.Cut(line, " ")
-			source, destination, _ := strings.Cut(header, "-to-")
-			maps[source] = Category{kind: destination}
-			kind = source
+			maps = append(maps, nil)
 		} else if len(line) > 0 {
 			var fields []int
 			for _, field := range strings.Split(line, " ") {
@@ -89,10 +77,8 @@ func main() {
 				fields = append(fields, n)
 			}
 
-			rule := Rule{to: fields[0], from: fields[1], size: fields[2]}
-			category := maps[kind]
-			category.rules = append(category.rules, rule)
-			maps[kind] = category
+			category := &maps[len(maps)-1]
+			*category = append(*category, Rule{to: fields[0], from: fields[1], size: fields[2]})
 		}
 	}
 
