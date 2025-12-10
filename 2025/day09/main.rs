@@ -43,11 +43,10 @@ fn inside(edges: (&Vec<Edge>, &HashSet<Edge>), point: &Point) -> bool {
 			None
 		};
 
-		// A column wise edge should only be counted if point is not the
-		// end corner of the row wise edge, otherwise the direction of
-		// the start and end column wise edges which are adjacent to the
-		// two corners must go in the same direction (i.e. have both an
-		// obtuse or acute angle).
+		// A column wise edge should only be counted if point is not the second
+		// occurring corner of the row wise edge, otherwise the direction of the
+		// start and end column wise edges which are adjacent to the two corners
+		// must go in the same direction (i.e. have both an obtuse or acute angle).
 		let not_in_row_or_both_obtuse_corners = corner_met.zip(last_corner_met).is_none_or(
 			|((corner, other), (last_corner, last_other))| {
 				(
@@ -67,7 +66,7 @@ fn inside(edges: (&Vec<Edge>, &HashSet<Edge>), point: &Point) -> bool {
 	edges % 2 != 0
 }
 
-fn part2(coords: &[Point]) -> isize {
+fn part2(coords: &[Point], precision: usize) -> Option<isize> {
 	let mut col_edges = Vec::new();
 	let mut row_edges = HashSet::new();
 	for i in 0..coords.len() {
@@ -91,43 +90,42 @@ fn part2(coords: &[Point]) -> isize {
 	}
 	rectangles.sort_by_key(|&(_, _, area)| area);
 
+	'outer:
 	for &(a, b, area) in rectangles.iter().rev() {
-		let c = Point {x: a.x, y: b.y};
-		let d = Point {x: b.x, y: a.y};
-		if !inside((&col_edges, &row_edges), &c)
-			|| !inside((&col_edges, &row_edges), &d) {	// Check opposite corners
+		if !inside((&col_edges, &row_edges), &(Point {x: a.x, y: b.y}))
+			|| !inside((&col_edges, &row_edges), &(Point {x: b.x, y: a.y})) {	// Check opposite corners
 			continue;
 		}
 
-		let dx = (b.x - a.x) as f64;
-		let dy = (b.y - a.y) as f64;
-		let step = if dx.abs() > dy.abs() {
-			(dx.signum() as f64, dy/dx.abs())
-		} else {
-			(dx/dy.abs(), dy.signum() as f64)
-		};
+		// Perimeter of the rectangle
+		let y_range = cmp::min(a.y, b.y)+1..cmp::max(a.y, b.y);
+		let x_range = cmp::min(a.x, b.x)+1..cmp::max(a.x, b.x);
 
-		let mut are_inside = true;
-		let mut exploring = (a.x as f64, a.y as f64);
-		while are_inside {
-			let current = Point {
-				x: exploring.0.round() as isize,
-				y: exploring.1.round() as isize
-			};
-
-			are_inside = are_inside && inside((&col_edges, &row_edges), &current);
-			exploring = (exploring.0 + step.0, exploring.1 + step.1);
-
-			if &current == b {
-				break;
+		for i in 0..precision {	// Interlace coordinates so that small gaps are checked later
+			for y in y_range.clone().skip(i).step_by(precision) {	// Left edge
+				if !inside((&col_edges, &row_edges), &(Point {x: a.x, y})) {
+					continue 'outer;
+				}
+			}
+			for y in y_range.clone().skip(i).step_by(precision) {	// Right edge
+				if !inside((&col_edges, &row_edges), &(Point {x: b.x, y})) {
+					continue 'outer;
+				}
+			}
+			for x in x_range.clone().skip(i).step_by(precision) {	// Top edge
+				if !inside((&col_edges, &row_edges), &(Point {x, y: a.y})) {
+					continue 'outer;
+				}
+			}
+			for x in x_range.clone().skip(i).step_by(precision) {	// Bottom edge
+				if !inside((&col_edges, &row_edges), &(Point {x, y: b.y})) {
+					continue 'outer;
+				}
 			}
 		}
-
-		if are_inside {
-			return area;
-		}
+		return Some(area);
 	}
-	0
+	None
 }
 
 fn main() {
@@ -146,5 +144,5 @@ fn main() {
 		.collect();
 
 	println!("{}", part1(&coords));
-	println!("{}", part2(&coords));
+	println!("{}", part2(&coords, 10).unwrap());
 }
